@@ -1,28 +1,407 @@
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+// 黑白棋.cpp : 定义控制台应用程序的入口点。
+//
 
-# Precompiled Headers
-*.gch
-*.pch
+#include "stdafx.h"
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
 
-# Fortran module files
-*.mod
+int _tmain(int argc, _TCHAR* argv[])
+{
+	return 0;
+}
+#include <iostream >
+#include <graphics.h> // 就是需要引用这个图形库
+#include <conio.h>
+#include <stdio.h>
+#include <windows.h>
+#include <tchar.h>
+#include <time.h>
+#include <stdlib.h>
+#include <cstring>
+#include <fstream>
+using namespace std;
+bool flag=0, over1 =0, over2 =0; //记录本回合是否可以落子
+int x=5, y=3, cont = 0;
+int a[9][9] = {0};
+int b[9][9];
+void move();
+void draw();
+void change(int c, int i, int j);
+void search(int c);
+void AI();
+void clear();
+void end();
+void power();
+void save();
+void load();
+int main()
+{
+	power();
+	initgraph(600, 600); //设置图形窗口的大小
+	setbkcolor(GREEN); //设置图形窗口的背景颜色
+	a[4][4] = 1;
+	a[5][5] = 1;
+	a[4][5] = 2;
+    a[5][4] = 2;
+	draw();
+	search(1);//寻找黑子可以下的位置
+	draw();
+	outtextxy( 25+60*x, 25+60*y , L"*");
+	move();
+	system ("pause");
+    closegraph();
+	return 0;
+}
+void power()
+{
+	int i,j;
+	for (i=1; i<=8; i++)
+	{
+		for (j=1;j<=8; j++)
+		{
+			if (i==1&&j==1||i==1&&j==8||i==8&&j==1||i==8&&j==8)
+				b[i][j] =100;
+			else if (i==2&&j==2 || i==2&&j==7||i==7&&j==2||i==7&&j==7)
+				b[i][j] =0;
+			else if (i==2 || j==2)
+				b[i][j] =10;
+			else
+				b[i][j] =50;
+		}
+	}
+}
+void draw()
+{
+  cleardevice();
+  int i, j;
+  setfillcolor(YELLOW);
+  fillrectangle(60, 60, 540, 540);	//画矩形，对角线顶点坐标
+  setcolor(BLACK);	 //设置线条的颜色
+  for(i=60; i<=540; i+=60)
+  {
+	  line(60, i, 540, i);	 //画一条横线，两点坐标；
+	  line(i, 60, i, 540);	 //画一条纵线
+  }
+  for(i=1; i<=8; i++)
+  {
+	  for (j=1; j<=8; j++)
+	  {
+		  if (a[i][j] == 1)
+		  {
+			  setfillcolor(BLACK);	 //设置填充颜色为黑色
+			  setcolor(BLACK);
+			  fillcircle(30+ 60*i, 30 + 60 *j, 25);	 //画一个黑色圆，圆心坐标和半径
+		  }
+		  else if (a[i][j] == 2) 
+		  {
+			  setfillcolor(WHITE);	 //设置填充颜色为白色
+              setcolor(GREEN);
+			  fillcircle(30+ 60*i, 30 + 60 *j, 25);	 //画一个白色圆，圆心坐标和半径
+		  }
+		  else if (a[i][j] ==3)
+		  {
+			  setfillcolor(BLUE);
+			  setcolor(BLACK);
+			  fillrectangle(60 *i, 60 *j , 60 *(i+1), 60 *(j+1));
+		  }
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+		  setcolor(WHITE);	 //重新定义画笔颜色为白色
+		  TCHAR writer[] = _T("制作人：Alan");	//定义字符串
+		  outtextxy(400, 570, writer);	 //在指定的位置显示白色字符串
+		  TCHAR s[] = _T("存档请按s");	//定义字符串
+		  outtextxy(100, 550, s);
+		  TCHAR l[] = _T("加载存档请按l");	//定义字符串
+		  outtextxy(100, 570, l);
+	  }
+  }
+}
+void move ()
+{
+	if (cont == 64)
+	{
+		end();
+	}
+	char c;
+	search(1);
+	if (flag == 0)
+	{
+		 search(2);
+		 if (flag == 0)
+			 end();
+		 cleardevice(); //清屏
+		 draw();
+		 setcolor(WHITE);	 //重新定义画笔颜色为白色
+		 TCHAR xx[] = _T("你没地方下了，电脑可以继续走啦啦啦");	//定义字符串
+		 outtextxy(250, 550, xx);	 //在指定的位置显示白色字符串
+		 system ("pause");
+		 cleardevice();
+		 draw();
+		 AI();//如果玩家无法落子，电脑继续走
+	}
+	search(1);
+	over1 = 0;
+	c=_getch();
+	if (c== '\r')
+	{
+		if (a[x][y] == 3)  
+		{
+			change(1, x, y);
+			cont ++;
+	        clear();
+	        draw();
+	        system ("pause");
+	        AI();
+		    search(1);
+		    draw();
+		    move();
+		}
+		else
+			move();
+	}
+	if(c=='s')
+		save();
+	if(c=='l')
+		load();
+	draw();
+	c=_getch();
+	switch (c)
+	{
+	case 77: x++ ;  break;
+	case 75: x-- ;  break;
+    case 72: y-- ;   break;
+	case 80: y++ ;   break;
+	}
+	outtextxy(25+60 * x, 25+60*y , L"*");
+	move();
+	return;
+}
+void search(int c)
+{
+	clear();
+	flag = 0;
+	int i, j, k, p, q;
+	for (i=1; i<=8; i++)
+	{
+		for (j=1; j<=8; j++)
+		{
+			if (a[i][j] == 0)
+			{
+				for (p=-1; p<=1; p++)
+				{
+					for (q=-1; q<=1; q++)
+					{
+						if (a[i+p][j+q] == 3-c)
+						{
+							k=2;
+					        while (1)
+					        {
+								if (a[i+k*p ][j+k*q] == c)
+								{
+							        flag = 1;
+							        a[i][j] = 3; 
+							        break;
+					           	}
+						        else if (a[i+k*p ][j+k*q] == 3-c)
+						        {
+							        k++;
+							        continue;
+						        }
+						        else 
+							        break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+void change(int c ,int i, int j)
+{
+	int p, q, k, m;
+	for (p=-1; p<=1; p++)			
+	{
+		for (q=-1; q<=1; q++)
+		{
+			if (a[i+p][j+q] == 3-c)
+			{
+							k=2;
+					        while (1)
+					        {
+						if (a[i+k*p ][j+k*q] == c)
+						{
+							for (m=1; m<=k-1; m++)
+								a[i+m*p][j+m*q] = c;
+							a[i][j] = c; 
+							break;
+						}
+						else if (a[i+k*p ][j+k*q] == 3-c)
+						{
+							k++;
+							continue;
+						}
+						else 
+							break;
+							}
+			}
+		}
+	}
+	return;
+}
+void AI()
+{
+	if (cont == 64)
+	{
+		end();
+	}
+	search(2);
+	if (flag == 0)
+	{ 
+		 search(1);
+		 if (flag == 0)
+			 end();
+		 cleardevice(); //清屏
+		 draw();
+		 setcolor(WHITE);	 //重新定义画笔颜色为白色
+		 TCHAR xx[] = _T("电脑没地方下了，你继续吼吼");	//定义字符串
+		 outtextxy(250, 550, xx);	 //在指定的位置显示白色字符串
+		 system ("pause");
+		 cleardevice(); //清屏
+		 draw();
+		 move();//如果电脑无法落子，人继续走
+	}
+	search(2);
+	int i, j, k=0, s=0, m=-1;
+	for(i=1; i<=8; i++)
+	{
+	  for (j=1; j<=8; j++)
+	  {
+		  if (a[i][j] == 3)
+		  {
+			  if (b[i][j]>m)
+				  m=b[i][j];
+		  }
+	  }
+	}
+	for(i=1; i<=8; i++)
+	{
+	  for (j=1; j<=8; j++)
+	  {
+		  if (a[i][j] == 3)
+		  {
+			  if (b[i][j]==m)
+				  k++;
+		  }
+	  }
+	}
+	srand((unsigned)time(NULL));
+	k = int(rand()%k);
+	for(i=1; i<=8; i++)
+	{
+	  for (j=1; j<=8; j++)
+	  {
+		  if (a[i][j] == 3)
+		  {
+			  if (b[i][j]==m)
+			  {
+				  if (s==k)
+			      {
+				      change(2, i, j);
+			          cont ++;
+			          move();
+			      }
+			      s++;
+			  }
+		  }
+	  }
+	}
+}
+void clear()
+{
+	int i, j;
+	for (i=1; i<=8; i++)
+		{
+			for (j=1; j<=8; j++)
+			{
+				if (a[i][j] == 3)
+					a[i][j] = 0;
+			}
+		}
+}
+void save()
+{
+	int i,j;
+	ofstream fout("data");
+	if (!fout) //如果打开失败outfile得到一个NULL
+	{
+		TCHAR error[] = _T("保存失败");	//定义字符串
+			outtextxy(250, 30, error);
+			move();
+	}
+	for (i=1; i<=8; i++)
+	{
+		for (j=1; j<=8; j++)
+			fout << a[i][j]<<" ";
+	}
+	fout.close();
+	TCHAR yes[] = _T("存档成功！！");	//定义字符串
+		  outtextxy(250, 30, yes);	 //在指定的位置显示白色字符串
+	move();
+}
+void load()
+{
+	int i, j;
+	ifstream fin("data");//打开文件用于取数据
+	if (!fin) //判断打开是否失败
+	{
+		TCHAR error[] = _T("抱歉没有存档");	//定义字符串
+			outtextxy(250, 30, error);
+		system("pause");
+		move();
+	}
+	for (i=1; i<=8; i++)
+	{
+		for (j=1; j<=8; j++)
+			fin >> a[i][j];
+	}
+	fin.close();
+	move();
+}
+void end()
+{
+	int b=0, w=0,  i, j;
+		for (i=1; i<=8; i++)
+		{
+			for (j=1; j<=8; j++)
+			{
+				if (a[i][j] == 1)
+					b++;
+				if (a[i][j] == 2)
+					w++;
+			}
+		}
+		if (b>w)
+		{
+			TCHAR win[] = _T("你赢啦");	//定义字符串
+			outtextxy(300, 550, win);
+		}
+		else if (b<w)
+		{
+			TCHAR lose[] = _T("你输了 T T， 你还是太弱");	//定义字符串
+			outtextxy(300, 550, lose);
+		}
+		else
+		{
+			TCHAR tie[] = _T("平局 ！！！ 君子以和为贵");	//定义字符串
+			outtextxy(300, 550, tie);
+		}
+		system("pause");
+		TCHAR eend[] = _T("退出请按回车");	//定义字符串
+			outtextxy(250,30, eend);
+			char c;
+			do
+			{
+				c=_getch();
+			}while( c != '\r');
+        closegraph();
+		exit(1);
+}
